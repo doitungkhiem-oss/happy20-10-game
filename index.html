@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌸 Nhặt Hoa Chúc Mừng 20/10 🌸</title>
+  <style>
+    html, body { overflow: hidden; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #ffe6f0;
+      text-align: center;
+    }
+    h1 {
+      color: #b30059;
+      background: #ffd6ea;
+      padding: 10px;
+      border-radius: 10px;
+      width: 60%;
+      margin: 20px auto;
+    }
+    #game-container {
+      margin: 0 auto;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+      display: inline-block;
+    }
+    #popup {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+    #popup button {
+      margin-top: 20px;
+      padding: 10px 25px;
+      background: #ff69b4;
+      border: none;
+      color: white;
+      font-size: 1.1em;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌷 Nhặt Hoa Chúc Mừng 20/10 🌷</h1>
+  <div id="game-container"></div>
+  <div id="popup"><div id="popup-text"></div></div>
+
+  <!-- ⚠️ Quan trọng: dùng Phaser 3.55.2 -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <script src="./wishes.js"></script>
+  <script src="./game.js"></script>
+</body>
+</html>
