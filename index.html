@@ -46,17 +46,120 @@
       font-size: 1.1em;
       border-radius: 8px;
       cursor: pointer;
+      box-shadow: 0 0 10px rgba(255,105,180,0.6);
+      transition: 0.3s;
+    }
+    #popup button:hover {
+      background: #ff85c1;
     }
   </style>
 </head>
+
 <body>
   <h1>🌷 Nhặt Hoa Chúc Mừng 20/10 🌷</h1>
   <div id="game-container"></div>
   <div id="popup"><div id="popup-text"></div></div>
 
-  <!-- ⚠️ Quan trọng: dùng Phaser 3.55.2 -->
+  <!-- ⚙️ Thư viện Phaser -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+
+  <!-- 🌸 Danh sách lời chúc -->
   <script src="./wishes.js"></script>
-  <script src="./game.js"></script>
+
+  <!-- 🔥 Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    // ⚙️ Cấu hình Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBiZAd9vnuTjbbHW0_hcpoqtqef-0ZIhYzg",
+      authDomain: "happy20-10-a67f2.firebaseapp.com",
+      databaseURL: "https://happy20-10-a67f2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "happy20-10-a67f2",
+      storageBucket: "happy20-10-a67f2.firebasestorage.app",
+      messagingSenderId: "2324409939",
+      appId: "1:2324409939:web:2e1cfeae7040e1d16ae0a6",
+      measurementId: "G-XV75NW8QHD"
+    };
+
+    // 🚀 Khởi tạo Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const giftKeyword = "món quà xinh"; // từ khóa để giới hạn
+
+    // 💾 Lưu kết quả (có kiểm tra giới hạn quà)
+    window.saveResult = async (name, wish) => {
+      try {
+        const snapshot = await get(child(ref(db), "results"));
+        let data = snapshot.exists() ? Object.values(snapshot.val()) : [];
+
+        // 🔍 Đếm số lời chúc có chứa giftKeyword
+        const giftCount = data.filter(d => d.wish?.includes(giftKeyword)).length;
+
+        // ⚠️ Nếu đã đạt 2 lời chúc có quà → đổi sang lời chúc không chứa quà
+        if (wish.includes(giftKeyword) && giftCount >= 2) {
+          console.warn("⚠️ Đã đạt giới hạn 2 món quà, chọn lại lời chúc thường.");
+          const normalWishes = (window.wishes || []).filter(w => !w.includes(giftKeyword));
+          wish = normalWishes.length
+            ? normalWishes[Math.floor(Math.random() * normalWishes.length)]
+            : "Chúc bạn luôn vui vẻ và hạnh phúc nhé 💖";
+        }
+
+        // 💾 Lưu dữ liệu vào Firebase
+        await push(ref(db, "results"), {
+          name,
+          wish,
+          time: new Date().toISOString()
+        });
+        console.log(`✅ Lưu lời chúc thành công: ${name} – ${wish}`);
+      } catch (err) {
+        console.error("❌ Lỗi lưu Firebase:", err);
+      }
+    };
+
+    // 🔍 Kiểm tra trùng tên (để mỗi người chỉ nhận 1 lần)
+    window.checkDuplicateName = async (name) => {
+      try {
+        const snapshot = await get(child(ref(db), "results"));
+        if (!snapshot.exists()) return false;
+        return Object.values(snapshot.val()).some(
+          (r) => r.name?.toLowerCase() === name.toLowerCase()
+        );
+      } catch (err) {
+        console.error("❌ Lỗi khi đọc Firebase:", err);
+        return false;
+      }
+    };
+
+    // 🔢 Đếm số người đã tham gia (hiển thị góc phải)
+    async function updatePlayerCount() {
+      const snapshot = await get(child(ref(db), "results"));
+      const count = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
+      let counter = document.getElementById("player-count");
+      if (!counter) {
+        counter = document.createElement("div");
+        counter.id = "player-count";
+        counter.style.position = "fixed";
+        counter.style.bottom = "10px";
+        counter.style.right = "15px";
+        counter.style.color = "#ff69b4";
+        counter.style.fontWeight = "600";
+        counter.style.background = "#fff";
+        counter.style.borderRadius = "8px";
+        counter.style.padding = "6px 12px";
+        counter.style.boxShadow = "0 0 8px rgba(255,105,180,0.4)";
+        document.body.appendChild(counter);
+      }
+      counter.textContent = `💌 Đã có ${count} lời chúc gửi đi`;
+    }
+
+    updatePlayerCount();
+    setInterval(updatePlayerCount, 10000); // cập nhật mỗi 10s
+  </script>
+
+  <!-- 🎮 Game logic -->
+  <script src="./game.js" type="module"></script>
 </body>
 </html>

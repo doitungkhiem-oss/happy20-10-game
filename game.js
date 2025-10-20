@@ -14,7 +14,7 @@ window.onload = () => showIntroPopup();
 
 function preload() {
   this.load.image("bg", "./assets/bg.jpg");
-  this.load.image("player", "./assets/player.png"); // vẫn load nếu cần dùng icon
+  this.load.image("player", "./assets/player.png");
   this.load.image("rose", "./assets/rose.png");
   this.load.image("spark", "./assets/spark.png");
   this.load.audio("music", "./assets/music.mp3");
@@ -26,10 +26,8 @@ function create() {
   scene.gameStarted = false;
   scene.selected = false;
 
-  // 🌅 Nền
   scene.add.image(400, 300, "bg").setDisplaySize(800, 600);
 
-  // 🌸 Hoa rơi nền trang trí
   const particles = scene.add.particles("rose");
   particles.createEmitter({
     x: { min: 0, max: 800 },
@@ -43,7 +41,6 @@ function create() {
     blendMode: "ADD"
   });
 
-  // 🌹 Nhóm bông hoa có thể click
   scene.roses = scene.add.group();
   for (let i = 0; i < 30; i++) {
     const x = Phaser.Math.Between(80, 720);
@@ -51,9 +48,8 @@ function create() {
     const rose = scene.add.image(x, y, "rose").setScale(0.1).setInteractive({ useHandCursor: true });
     rose.wish = wishes[i % wishes.length];
 
-    // 👇 Bắt sự kiện click
     rose.on("pointerdown", () => {
-      if (!scene.gameStarted || scene.selected) return; // chỉ cho 1 lần
+      if (!scene.gameStarted || scene.selected) return;
       scene.selected = true;
       rose.setVisible(false);
       collectRose(scene, rose);
@@ -62,42 +58,45 @@ function create() {
     scene.roses.add(rose);
   }
 
-  // 🎵 Nhạc nền
   scene.bgMusic = scene.sound.add("music", { volume: 0.4, loop: true });
-
   console.log("🎮 Scene ready! Click 1 bông hoa để nhận lời chúc 💐");
 }
 
-function update() {
-  // Không cần update di chuyển nữa
-}
+function update() {}
 
-// ───────── Logic chọn lời chúc an toàn ─────────
+// ───────── Firebase ─────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBiZAd9vnuTjbbHW0_hcpoqtqef-0ZIhYzg",
+  authDomain: "happy20-10-a67f2.firebaseapp.com",
+  databaseURL: "https://happy20-10-a67f2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "happy20-10-a67f2",
+  storageBucket: "happy20-10-a67f2.firebasestorage.app",
+  messagingSenderId: "2324409939",
+  appId: "1:2324409939:web:2e1cfeae7040e1d16ae0a6",
+  measurementId: "G-XV75NW8QHD"
+};
+
+const appFB = initializeApp(firebaseConfig);
+const db = getDatabase(appFB);
+
+// ───────── Lựa lời chúc theo giới hạn quà ─────────
 const giftKeyword = "Và mình sẽ tặng cho bạn một món quà xinh. Nếu bạn nhận được thông báo này thì hãy tìm mình ở hòm thư";
 
-let cachedGiftCount = null;
-
-// 🔄 Hàm chọn lời chúc ngẫu nhiên nhưng tuân theo quy tắc giới hạn quà
 async function getRandomWish() {
-  const gitlabProjectId = "75449909";
-  const token = "glpat-oxQgC4oWi6tOWREKnFnIiG86MQp1OmlpMjNhCw.01.121un4heh";
-  const filePath = "data.json";
-  const giftKeyword = "Và mình sẽ tặng cho bạn một món quà xinh";
-
   try {
-    const res = await fetch(
-      `https://gitlab.com/api/v4/projects/${gitlabProjectId}/repository/files/${encodeURIComponent(filePath)}/raw?ref=main`,
-      { headers: { "PRIVATE-TOKEN": token } }
-    );
-    const data = await res.json().catch(() => []);
-    const giftCount = data.filter(item => item.wish?.includes(giftKeyword)).length;
+    const snapshot = await get(child(ref(db), "results"));
+    const data = snapshot.exists() ? Object.values(snapshot.val()) : [];
+    const giftCount = data.filter(d => d.wish?.includes(giftKeyword)).length;
 
     let available = wishes;
     if (giftCount >= 2) available = wishes.filter(w => !w.includes(giftKeyword));
 
     return available[Math.floor(Math.random() * available.length)];
   } catch (err) {
-    console.warn("⚠️ Lỗi đọc data.json từ GitLab:", err);
+    console.warn("⚠️ Lỗi đọc dữ liệu từ Firebase:", err);
     return wishes[Math.floor(Math.random() * wishes.length)];
   }
 }
@@ -108,7 +107,6 @@ async function collectRose(scene, rose) {
   const wish = rose.wish || await getRandomWish();
   const popup = document.getElementById("popup");
 
-  // 🌹 Hiệu ứng nở ra rồi tan biến cho bông hoa
   scene.tweens.add({
     targets: rose,
     scale: { from: 0.1, to: 0.5 },
@@ -117,71 +115,23 @@ async function collectRose(scene, rose) {
     duration: 800,
     ease: "Sine.easeOut",
     onComplete: () => {
-      rose.destroy(); // Xóa hoa sau khi hiệu ứng xong
-
-      // 💾 Lưu dữ liệu ngay sau khi chọn hoa
+      rose.destroy();
       saveResult(scene.playerName, wish);
-
-      // 🔥 Xóa nội dung popup cũ
-      popup.innerHTML = "";
-
-      // 💐 Tạo giao diện lời chúc với hiệu ứng fade-in
       popup.innerHTML = `
-        <div id="popup-text" style="
-          text-align:center;
-          color:#fff;
-          line-height:1.6;
-          font-weight:500;
-          opacity:0;
-          transform:scale(0.95);
-          transition:opacity 1s ease, transform 1s ease;
-        ">
-          <div style="font-size:1.4em; margin-bottom:8px;">
-            💐 <b style="color:#ffb6c1; font-size:1.5em;">${scene.playerName}</b>
-          </div>
-          <div style="font-size:1.1em; color:#fff; font-weight:600;">
-            Lời chúc đặc biệt dành riêng cho bạn 💖
-          </div>
-          <div style="
-            margin-top:15px;
-            font-size:1.6em;
-            font-weight:700;
-            background: linear-gradient(90deg, #ff9a9e, #fad0c4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 10px rgba(255,182,193,0.7);
-          ">
-            “${wish}”
-          </div>
+        <div id="popup-text" style="text-align:center;color:#fff;line-height:1.6;font-weight:500;opacity:0;transform:scale(0.95);transition:opacity 1s ease,transform 1s ease;">
+          <div style="font-size:1.4em;margin-bottom:8px;">💐 <b style="color:#ffb6c1;font-size:1.5em;">${scene.playerName}</b></div>
+          <div style="font-size:1.1em;color:#fff;font-weight:600;">Lời chúc đặc biệt dành riêng cho bạn 💖</div>
+          <div style="margin-top:15px;font-size:1.6em;font-weight:700;background:linear-gradient(90deg,#ff9a9e,#fad0c4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 10px rgba(255,182,193,0.7);">“${wish}”</div>
           <br>
-          <button id="endBtn"
-            style="padding:10px 28px;
-            background:#ff69b4;
-            border:none;
-            border-radius:10px;
-            color:white;
-            font-size:1em;
-            font-weight:bold;
-            cursor:pointer;
-            box-shadow:0 0 10px rgba(255,105,180,0.6);
-            transition:0.3s;">
-            Kết thúc
-          </button>
+          <button id="endBtn" style="padding:10px 28px;background:#ff69b4;border:none;border-radius:10px;color:white;font-size:1em;font-weight:bold;cursor:pointer;box-shadow:0 0 10px rgba(255,105,180,0.6);transition:0.3s;">Kết thúc</button>
         </div>`;
-
       popup.style.display = "flex";
-
-      // ✨ Fade-in nhẹ cho popup
       setTimeout(() => {
         const popupText = document.getElementById("popup-text");
         popupText.style.opacity = "1";
         popupText.style.transform = "scale(1)";
       }, 50);
-
-      // 🎆 Pháo hoa
       showFireworks(scene);
-
-      // 🖱️ Nút kết thúc
       document.getElementById("endBtn").onclick = () => {
         popup.style.display = "none";
         showEndMessage();
@@ -306,64 +256,29 @@ function validateVietnameseName(name) {
   return regex.test(name);
 }
 
-// ───────── Check trùng tên ─────────
+// ───────── Kiểm tra trùng tên ─────────
 async function checkDuplicateName(name) {
-  const gitlabProjectId = "75449909";
-  const token = "glpat-Q-3y8jR5p6r2DjlmKD1MQG86MQp1OmlpMjNhCw.01.120s8pkay";
-  const filePath = "data.json";
-
   try {
-    const res = await fetch(
-      `https://gitlab.com/api/v4/projects/${gitlabProjectId}/repository/files/${encodeURIComponent(filePath)}/raw?ref=main`,
-      { headers: { "PRIVATE-TOKEN": token } }
+    const snapshot = await get(child(ref(db), "results"));
+    if (!snapshot.exists()) return false;
+    return Object.values(snapshot.val()).some(
+      r => r.name?.toLowerCase() === name.toLowerCase()
     );
-    const list = await res.json().catch(() => []);
-    return list.some(item => item.name?.toLowerCase() === name.toLowerCase());
   } catch (err) {
-    console.error("❌ Lỗi khi đọc data.json từ GitLab:", err);
+    console.error("❌ Lỗi khi đọc Firebase:", err);
     return false;
   }
 }
 
-// ───────── Lưu kết quả ─────────
+// ───────── Lưu kết quả vào Firebase ─────────
 async function saveResult(name, wish) {
   if (!name || !wish) return;
-  const record = { name, wish, time: new Date().toISOString() };
-
-  const gitlabProjectId = "75449909";
-  const token = "glpat-Q-3y8jR5p6r2DjlmKD1MQG86MQp1OmlpMjNhCw.01.120s8pkay";
-  const filePath = "data.json";
-
-  try {
-    // Lấy file hiện tại
-    const resOld = await fetch(
-      `https://gitlab.com/api/v4/projects/${gitlabProjectId}/repository/files/${encodeURIComponent(filePath)}/raw?ref=main`,
-      { headers: { "PRIVATE-TOKEN": token } }
-    );
-    let oldData = [];
-    if (resOld.ok) oldData = await resOld.json().catch(() => []);
-
-    oldData.push(record);
-    const newContent = JSON.stringify(oldData, null, 2);
-
-    // Cập nhật file
-    const res = await fetch(
-      `https://gitlab.com/api/v4/projects/${gitlabProjectId}/repository/files/${encodeURIComponent(filePath)}`,
-      {
-        method: "PUT",
-        headers: { "PRIVATE-TOKEN": token, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          branch: "main",
-          content: newContent,
-          commit_message: `New wish from ${name}`
-        })
-      }
-    );
-
-    console.log(res.ok ? "✅ Lưu GitLab thành công" : "❌ Lỗi GitLab", await res.text());
-  } catch (err) {
-    console.error("❌ Lỗi lưu GitLab:", err);
-  }
+  await push(ref(db, "results"), {
+    name,
+    wish,
+    time: new Date().toISOString()
+  });
+  console.log("✅ Đã lưu lên Firebase");
 }
 
 
