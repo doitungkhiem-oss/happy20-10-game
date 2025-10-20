@@ -103,16 +103,13 @@
 
     // 🔍 Kiểm tra trùng tên (để mỗi người chỉ nhận 1 lần)
     window.checkDuplicateName = async (name) => {
-      try {
-        const snapshot = await get(child(ref(db), "results"));
-        if (!snapshot.exists()) return false;
-        return Object.values(snapshot.val()).some(
-          (r) => r.name?.toLowerCase() === name.toLowerCase()
-        );
-      } catch (err) {
-        console.error("❌ Lỗi khi đọc Firebase:", err);
-        return false;
-      }
+      const snapshot = await get(child(ref(db), "results"));
+      if (!snapshot.exists()) return null;
+
+      const found = Object.values(snapshot.val()).find(
+        (r) => r.name?.toLowerCase() === name.toLowerCase()
+      );
+      return found || null; // Trả về { name, wish, time } hoặc null
     };
 
     // 🔢 Đếm số người đã tham gia (hiển thị góc phải)

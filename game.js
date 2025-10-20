@@ -235,10 +235,40 @@ async function showNamePopup() {
      showCustomAlert("⚠️ Vui lòng nhập tên hợp lệ có dấu tiếng Việt (vd: Nguyễn Mai).");
       return;
     }
-    if (await checkDuplicateName(name)) {
-      showCustomAlert("🌸 Bạn đã nhận lời chúc rồi!");
+    const existing = await checkDuplicateName(name);
+    console.log("📦 Dữ liệu tìm thấy:", existing);
+    if (existing) {
+      const popup = document.getElementById("popup");
+      popup.innerHTML = `
+        <div id="popup-text" style="text-align:center;color:#fff;">
+          💖 <b>${name}</b>, bạn đã nhận lời chúc rồi 🌸<br><br>
+          <div style="
+            font-size:1.4em;
+            font-weight:700;
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(255,182,193,0.7);
+          ">
+            “${existing.wish || "Lời chúc đang được cập nhật 💌"}”
+          </div><br>
+          <button id="okBtn"
+            style="padding:10px 25px;
+            background:#ff69b4;
+            color:#fff;
+            border:none;
+            border-radius:10px;
+            cursor:pointer;
+            font-weight:600;
+            box-shadow:0 0 8px rgba(255,105,180,0.6);">
+            OK 💕
+          </button>
+        </div>`;
+      popup.style.display = "flex";
+      document.getElementById("okBtn").onclick = () => popup.style.display = "none";
       return;
-    }
+
+}
 
     const sc = game.scene.scenes[0];
     sc.playerName = name;
@@ -257,18 +287,18 @@ function validateVietnameseName(name) {
 }
 
 // ───────── Kiểm tra trùng tên ─────────
-async function checkDuplicateName(name) {
-  try {
-    const snapshot = await get(child(ref(db), "results"));
-    if (!snapshot.exists()) return false;
-    return Object.values(snapshot.val()).some(
-      r => r.name?.toLowerCase() === name.toLowerCase()
-    );
-  } catch (err) {
-    console.error("❌ Lỗi khi đọc Firebase:", err);
-    return false;
-  }
-}
+// async function checkDuplicateName(name) {
+//   try {
+//     const snapshot = await get(child(ref(db), "results"));
+//     if (!snapshot.exists()) return false;
+//     return Object.values(snapshot.val()).some(
+//       r => r.name?.toLowerCase() === name.toLowerCase()
+//     );
+//   } catch (err) {
+//     console.error("❌ Lỗi khi đọc Firebase:", err);
+//     return false;
+//   }
+// }
 
 // ───────── Lưu kết quả vào Firebase ─────────
 async function saveResult(name, wish) {
