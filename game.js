@@ -26,8 +26,8 @@ function create() {
   scene.gameStarted = false;
   scene.selected = false;
 
+  // 🌸 Nền và hiệu ứng
   scene.add.image(400, 300, "bg").setDisplaySize(800, 600);
-
   const particles = scene.add.particles("rose");
   particles.createEmitter({
     x: { min: 0, max: 800 },
@@ -42,24 +42,53 @@ function create() {
   });
 
   scene.roses = scene.add.group();
-  for (let i = 0; i < 30; i++) {
-    const x = Phaser.Math.Between(80, 720);
-    const y = Phaser.Math.Between(80, 520);
-    const rose = scene.add.image(x, y, "rose").setScale(0.1).setInteractive({ useHandCursor: true });
-    rose.wish = wishes[i % wishes.length];
 
-    rose.on("pointerdown", () => {
-      if (!scene.gameStarted || scene.selected) return;
-      scene.selected = true;
-      rose.setVisible(false);
-      collectRose(scene, rose);
-    });
+  // 🚀 Gọi hàm async để lọc danh sách lời chúc
+  loadFilteredWishesAndCreateRoses(scene);
 
-    scene.roses.add(rose);
-  }
-
+  // 🎵 Nhạc nền
   scene.bgMusic = scene.sound.add("music", { volume: 0.4, loop: true });
   console.log("🎮 Scene ready! Click 1 bông hoa để nhận lời chúc 💐");
+}
+
+// 🧠 Hàm lấy dữ liệu từ Firebase và tạo hoa
+async function loadFilteredWishesAndCreateRoses(scene) {
+  try {
+    const snapshot = await get(child(ref(db), "results"));
+    const data = snapshot.exists() ? Object.values(snapshot.val()) : [];
+    const giftKeyword = "món quà xinh";
+    const giftCount = data.filter(r => r.wish?.includes(giftKeyword)).length;
+
+    // 🎁 Nếu đủ 2 món quà thì loại bỏ những hoa chứa “món quà xinh”
+    let availableWishes = wishes;
+    if (giftCount >= 2) {
+      availableWishes = wishes.filter(w => !w.includes(giftKeyword));
+      console.warn("🚫 Đã đủ 2 món quà, loại bỏ các hoa chứa 'món quà xinh'");
+    }
+
+    // 🌹 Tạo hoa dựa trên danh sách hợp lệ
+    for (let i = 0; i < 30; i++) {
+      const x = Phaser.Math.Between(80, 720);
+      const y = Phaser.Math.Between(80, 520);
+      const rose = scene.add.image(x, y, "rose")
+        .setScale(0.1)
+        .setInteractive({ useHandCursor: true });
+
+      rose.wish = availableWishes[i % availableWishes.length];
+
+      rose.on("pointerdown", () => {
+        if (!scene.gameStarted || scene.selected) return;
+        scene.selected = true;
+        rose.setVisible(false);
+        collectRose(scene, rose);
+      });
+
+      scene.roses.add(rose);
+    }
+
+  } catch (err) {
+    console.error("❌ Lỗi khi lọc danh sách quà:", err);
+  }
 }
 
 function update() {}
