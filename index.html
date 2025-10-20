@@ -2,8 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>🌸 Nhặt Hoa Chúc Mừng 20/10 🌸</title>
   <style>
     html, body {
@@ -13,31 +12,25 @@
       overflow: hidden;
       font-family: 'Segoe UI', sans-serif;
       background-color: #ffe6f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      text-align: center;
     }
 
     h1 {
       color: #b30059;
       background: #ffd6ea;
-      padding: 10px 15px;
-      border-radius: 12px;
-      margin: 10px 0;
-      font-size: clamp(1rem, 2.5vw, 1.8rem);
-      text-align: center;
-      width: 95%;
+      padding: 10px;
+      border-radius: 10px;
+      margin: 10px auto;
+      font-size: clamp(1rem, 2vw, 1.8rem);
+      width: 90%;
       max-width: 600px;
-      line-height: 1.4;
-      box-shadow: 0 0 8px rgba(255, 105, 180, 0.3);
     }
 
     #game-container {
-      flex: 1;
       width: 100%;
+      height: calc(100vh - 100px);
       max-width: 800px;
-      aspect-ratio: 4 / 3;
-      position: relative;
+      margin: 0 auto;
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
@@ -53,67 +46,30 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0, 0, 0, 0.5);
       z-index: 10;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-
-    #popup-text {
-      max-width: 90%;
-      font-size: clamp(1rem, 3vw, 1.4rem);
-      color: #fff;
-      text-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
-      line-height: 1.6;
+      padding: 15px;
     }
 
     #popup button {
       margin-top: 20px;
-      padding: 12px 30px;
+      padding: 10px 25px;
       background: #ff69b4;
       border: none;
       color: white;
-      font-size: clamp(1rem, 3vw, 1.2rem);
-      border-radius: 10px;
+      font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+      border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 0 12px rgba(255, 105, 180, 0.6);
-      transition: transform 0.2s ease, background 0.2s ease;
+      box-shadow: 0 0 10px rgba(255, 105, 180, 0.6);
     }
 
-    #popup button:active {
-      transform: scale(0.96);
-      background: #ff7fba;
-    }
-
-    /* 🌸 Responsive nhỏ hơn 600px (mobile) */
     @media (max-width: 600px) {
       h1 {
-        margin: 6px 0 8px;
+        margin-top: 10px;
         font-size: 1.2rem;
-        border-radius: 8px;
       }
       #game-container {
-        width: 95%;
-        height: auto;
-        aspect-ratio: 4 / 3;
-        border-radius: 15px;
-      }
-      #popup-text {
-        font-size: 1rem;
-      }
-      #popup button {
-        padding: 10px 20px;
-        font-size: 1rem;
-      }
-    }
-
-    /* Xử lý khi điện thoại xoay ngang */
-    @media (orientation: landscape) {
-      #game-container {
-        width: 100%;
-        max-width: none;
-        aspect-ratio: auto;
-        height: calc(100vh - 80px);
+        height: 80vh;
       }
     }
   </style>
@@ -143,17 +99,24 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
+    // ✅ Giới hạn tối đa 2 món quà
     const giftKeyword = "món quà xinh";
 
     window.saveResult = async (name, wish) => {
       const snapshot = await get(child(ref(db), "results"));
       const data = snapshot.exists() ? Object.values(snapshot.val()) : [];
+
       const giftCount = data.filter(r => r.wish?.includes(giftKeyword)).length;
       if (giftCount >= 2 && wish.includes(giftKeyword)) {
         console.warn("🚫 Đã đủ 2 món quà, bỏ qua ghi thêm.");
         return;
       }
-      await push(ref(db, "results"), { name, wish, time: new Date().toISOString() });
+
+      await push(ref(db, "results"), {
+        name,
+        wish,
+        time: new Date().toISOString()
+      });
       console.log("✅ Đã lưu lời chúc lên Firebase");
     };
 
